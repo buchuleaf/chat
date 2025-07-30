@@ -120,17 +120,17 @@ class GemmaChat {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), this.config.api.timeout);
             
-            const response = await fetch(
-                `${this.config.api.baseUrl}${this.config.api.endpoints.health}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        ...this.config.api.headers,
-                        'Cache-Control': 'no-cache'
-                    },
-                    signal: controller.signal
-                }
-            );
+            // First try with bypass parameter in URL to handle interstitial
+            const healthUrl = `${this.config.api.baseUrl}${this.config.api.endpoints.health}?skip_zrok_interstitial=true`;
+            
+            const response = await fetch(healthUrl, {
+                method: 'GET',
+                headers: {
+                    ...this.config.api.headers,
+                    'Cache-Control': 'no-cache'
+                },
+                signal: controller.signal
+            });
             
             clearTimeout(timeoutId);
             
@@ -198,18 +198,18 @@ class GemmaChat {
                 temperature: parseFloat(this.elements.temperature.value)
             };
             
-            const response = await fetch(
-                `${this.config.api.baseUrl}${this.config.api.endpoints.chat}`,
-                {
-                    method: 'POST',
-                    headers: {
-                        ...this.config.api.headers,
-                        'Cache-Control': 'no-cache'
-                    },
-                    body: JSON.stringify(requestBody),
-                    signal: this.abortController.signal
-                }
-            );
+            // Add bypass parameter to chat endpoint as well
+            const chatUrl = `${this.config.api.baseUrl}${this.config.api.endpoints.chat}?skip_zrok_interstitial=true`;
+            
+            const response = await fetch(chatUrl, {
+                method: 'POST',
+                headers: {
+                    ...this.config.api.headers,
+                    'Cache-Control': 'no-cache'
+                },
+                body: JSON.stringify(requestBody),
+                signal: this.abortController.signal
+            });
 
             if (!response.ok) {
                 throw new Error(`Service error: ${response.status}`);
