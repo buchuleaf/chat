@@ -116,128 +116,33 @@ class GemmaChat {
     }
 
     async checkBackendConnection() {
-        const maxRetries = 3;
-        
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), this.config.api.timeout);
-                
-                // Try different approaches to bypass interstitial
-                const urls = [
-                    `${this.config.api.baseUrl}${this.config.api.endpoints.health}?skip_zrok_interstitial=true`,
-                    `${this.config.api.baseUrl}${this.config.api.endpoints.health}`,
-                    `${this.config.api.baseUrl}/` // Fallback to root endpoint
-                ];
-                
-                const headers = {
-                    ...this.config.api.headers,
-                    'Cache-Control': 'no-cache',
-                    'User-Agent': 'GemmaChat/1.0'
-                };
-                
-                let response;
-                for (const url of urls) {
-                    try {
-                        console.log(`Attempting connection to: ${url}`);
-                        
-                        // Try with full headers first
-                        try {
-                            console.log('Request headers:', headers);
-                            response = await fetch(url, {
-                                method: 'GET',
-                                headers: headers,
-                                signal: controller.signal
-                            });
-                            console.log(`Response status: ${response.status}, Content-Type: ${response.headers.get('content-type')}`);
-                            break;
-                        } catch (headerError) {
-                            console.log('Request with headers failed, trying simple request:', headerError.message);
-                            
-                            // Try with minimal headers if full headers fail
-                            response = await fetch(url, {
-                                method: 'GET',
-                                headers: {
-                                    'Accept': 'application/json'
-                                },
-                                signal: controller.signal
-                            });
-                            console.log(`Simple request response status: ${response.status}`);
-                            break;
-                        }
-                    } catch (e) {
-                        console.error(`Failed attempt with URL: ${url}`, e);
-                        continue;
-                    }
-                }
-                
-                clearTimeout(timeoutId);
-                
-                if (!response) {
-                    throw new Error('All connection attempts failed');
-                }
-                
-                // Check if we got the interstitial page (usually returns HTML instead of JSON)
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('text/html')) {
-                    if (attempt < maxRetries) {
-                        console.log(`Attempt ${attempt}: Got interstitial page, retrying...`);
-                        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-                        continue;
-                    } else {
-                        this.updateConnectionStatus(false, 'Click here to bypass interstitial page');
-                        this.showInterstitialBypassLink();
-                        return;
-                    }
-                }
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    // Accept either health endpoint response or root endpoint response
-                    if (data.status === 'ok' || (data.status === 'running' && data.message === 'Gemma 3n Backend API')) {
-                        this.updateConnectionStatus(true, 'Connected');
-                        return;
-                    } else {
-                        console.log('Unexpected response data:', data);
-                        this.updateConnectionStatus(false, 'Service unavailable');
-                        return;
-                    }
-                } else if (response.status === 403) {
-                    this.updateConnectionStatus(false, 'Access denied - check zrok URL');
-                    return;
-                } else if (response.status === 502 || response.status === 503) {
-                    this.updateConnectionStatus(false, 'Backend service unavailable');
-                    return;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), this.config.api.timeout);
+
+            const response = await fetch(`${this.config.api.baseUrl}${this.config.api.endpoints.health}`, {
+                method: 'GET',
+                headers: this.config.api.headers,
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    this.updateConnectionStatus(true, 'Connected');
                 } else {
-                    this.updateConnectionStatus(false, `Server error (${response.status})`);
-                    return;
+                    this.updateConnectionStatus(false, 'Service unavailable');
                 }
-            } catch (error) {
-                if (error.name === 'AbortError') {
-                    this.updateConnectionStatus(false, 'Connection timeout');
-                    return;
-                } else if (error.message.includes('CORS')) {
-                    this.updateConnectionStatus(false, 'CORS error - check zrok configuration');
-                    return;
-                } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-                    if (attempt < maxRetries) {
-                        console.log(`Attempt ${attempt}: Network error, retrying...`);
-                        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-                        continue;
-                    } else {
-                        this.updateConnectionStatus(false, 'Network error - check zrok URL');
-                        return;
-                    }
-                } else {
-                    console.error(`Connection attempt ${attempt} failed:`, error);
-                    if (attempt < maxRetries) {
-                        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-                        continue;
-                    } else {
-                        this.updateConnectionStatus(false, 'Connection failed after multiple attempts');
-                        return;
-                    }
-                }
+            } else {
+                this.updateConnectionStatus(false, `Server error (${response.status})`);
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                this.updateConnectionStatus(false, 'Connection timeout');
+            } else {
+                this.updateConnectionStatus(false, 'Connection failed');
             }
         }
     }
