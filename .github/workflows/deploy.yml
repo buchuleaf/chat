@@ -33,11 +33,12 @@ jobs:
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload frontend artifact
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Specify the directory to upload
-          path: './frontend'
+          # CORRECTED PATH: '.' means "the root of the repository".
+          # Since our repository IS the frontend, this is correct.
+          path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
