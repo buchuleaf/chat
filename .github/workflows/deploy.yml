@@ -29,14 +29,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Replaces a placeholder in your index.html with the zrok URL from secrets
+      # 2. Replaces placeholder with the zrok URL, now with logic inside the script
       - name: Configure Backend URL
-        # This command finds the placeholder and replaces it with your secret URL.
-        # The '|' character is used as a separator to avoid issues with URLs containing slashes.
         run: |
-          sed -i 's|__BACKEND_URL__|${{ secrets.ZROK_URL }}/api/chat|g' index.html
-        # THIS IS THE CORRECTED LINE: The condition is now wrapped in ${{ ... }}
-        if: ${{ secrets.ZROK_URL != '' }}
+          # This approach moves the conditional check into the shell script.
+          # It checks if the ZROK_URL secret is non-empty before running the replacement command.
+          if [ -n "${{ secrets.ZROK_URL }}" ]; then
+            echo "✅ ZROK_URL secret found. Configuring backend URL..."
+            # The '|' character is used as a separator in sed to avoid issues with URLs.
+            sed -i 's|__BACKEND_URL__|${{ secrets.ZROK_URL }}/api/chat|g' index.html
+          else
+            echo "⚠️ ZROK_URL secret is not set. Skipping URL replacement."
+            echo "Your app may fail to connect to the backend. Please ensure the ZROK_URL secret is configured in your repository settings."
+          fi
 
       # 3. Sets up the GitHub Pages environment
       - name: Setup Pages
