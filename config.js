@@ -8,7 +8,7 @@ window.AppConfig = {
         // For local development, use your local server URL
         baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:3000'  // Development
-            : 'https://your-backend-domain.com',  // Production - replace with your actual backend URL
+            : 'https://99391ded4dae.ngrok-free.app',
         
         // API endpoints
         endpoints: {
