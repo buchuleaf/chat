@@ -6,7 +6,7 @@ window.AppConfig = {
         // Updated to use myzrok.io hosting
         baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:3000'  // Development
-            : 'https://fgpk6tp4g1pi.share.zrok.io',  // Replace with your myzrok.io URL
+            : 'https://fhsady1ubv9b.share.zrok.io',  // Replace with your myzrok.io URL
         
         // API endpoints
         endpoints: {
