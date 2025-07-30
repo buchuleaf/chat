@@ -115,7 +115,7 @@ class GemmaChat {
         this.elements.scrollToBottomBtn.style.display = shouldShow ? 'block' : 'none';
     }
 
-    async checkBackendConnection() {
+    async checkBackendConnection(isRetry = false) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), this.config.api.timeout);
@@ -137,6 +137,7 @@ class GemmaChat {
                 }
             } else {
                 this.updateConnectionStatus(false, `Server error (${response.status})`);
+                if (!isRetry) this.tryAutomatedBypass();
             }
         } catch (error) {
             if (error.name === 'AbortError') {
@@ -144,6 +145,7 @@ class GemmaChat {
             } else {
                 this.updateConnectionStatus(false, 'Connection failed');
             }
+            if (!isRetry) this.tryAutomatedBypass();
         }
     }
 
@@ -151,6 +153,24 @@ class GemmaChat {
         this.isConnected = connected;
         this.elements.statusDot.classList.toggle('connected', connected);
         this.elements.statusText.textContent = message;
+    }
+
+    tryAutomatedBypass() {
+        console.log('Attempting automated zrok bypass...');
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = `${this.config.api.baseUrl}?skip_zrok_interstitial=true`;
+        document.body.appendChild(iframe);
+
+        setTimeout(() => {
+            this.checkBackendConnection(true).then(() => {
+                if (!this.isConnected) {
+                    console.log('Automated bypass failed, showing manual link.');
+                    this.showInterstitialBypassLink();
+                }
+            });
+            document.body.removeChild(iframe);
+        }, 3000); // Wait for iframe to potentially set the cookie
     }
 
     showInterstitialBypassLink() {
@@ -179,6 +199,8 @@ class GemmaChat {
             }, 3000);
         };
     }
+
+    
 
     async sendMessage() {
         if (this.isProcessing) return;
