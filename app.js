@@ -1,4 +1,4 @@
-class SecureGemmaChat {
+class GemmaChat {
     constructor() {
         this.isConnected = false;
         this.isProcessing = false;
@@ -8,7 +8,6 @@ class SecureGemmaChat {
         this.isNearBottom = true;
         this.lastScrollTop = 0;
         
-        // Initialize with config
         this.config = window.AppConfig;
         
         this.initializeElements();
@@ -164,7 +163,7 @@ class SecureGemmaChat {
         if (!message) return;
         
         if (!this.isConnected) {
-            this.showError('Unable to connect to AI service. Please try again later.');
+            this.showError('Unable to connect to AI service. Please check your connection.');
             return;
         }
 
@@ -181,16 +180,11 @@ class SecureGemmaChat {
             this.addMessage('user', message);
             this.messageHistory.push({ role: 'user', content: message });
 
-            // Prepare secure request
             const requestBody = {
                 messages: [...this.messageHistory],
                 max_tokens: parseInt(this.elements.maxTokens.value),
                 temperature: parseFloat(this.elements.temperature.value)
             };
-
-            // Send request with timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), this.config.api.timeout);
             
             const response = await fetch(
                 `${this.config.api.baseUrl}${this.config.api.endpoints.chat}`,
@@ -202,10 +196,8 @@ class SecureGemmaChat {
                 }
             );
 
-            clearTimeout(timeoutId);
-
             if (!response.ok) {
-                throw new Error(`Service temporarily unavailable (${response.status})`);
+                throw new Error(`Service error: ${response.status}`);
             }
 
             // Handle streaming response
@@ -250,7 +242,7 @@ class SecureGemmaChat {
             if (error.name === 'AbortError') {
                 console.log('Generation stopped by user');
             } else {
-                this.showError('Failed to get response from AI service. Please try again.');
+                this.showError('Failed to get response. Please try again.');
                 console.error('Chat error:', error);
             }
         } finally {
@@ -319,7 +311,7 @@ class SecureGemmaChat {
     }
 }
 
-// Initialize the secure chat application
+// Initialize the chat application
 document.addEventListener('DOMContentLoaded', () => {
-    new SecureGemmaChat();
+    new GemmaChat();
 });
