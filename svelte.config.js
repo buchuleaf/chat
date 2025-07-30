@@ -11,10 +11,9 @@ const config = {
             fallback: 'index.html',
             precompress: false
         }),
-        // THIS IS THE CRITICAL LINE
         paths: {
-            // Replace 'your-repo-name' with your actual GitHub repository name
-            base: process.env.NODE_ENV === 'production' ? '/your-repo-name' : ''
+            // IMPORTANT: Replace 'project-frontend' with your actual repository name.
+            base: process.env.NODE_ENV === 'production' ? '/project-frontend' : ''
         }
     }
 };
