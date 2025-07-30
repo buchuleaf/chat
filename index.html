@@ -4,28 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Chat</title>
+    <!-- 1. Add the marked.js library from a CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f9; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #chat-container { width: 90%; max-width: 600px; height: 85vh; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; border-radius: 12px; }
+        #chat-container { width: 90%; max-width: 700px; height: 85vh; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; border-radius: 12px; }
         #chat-box { flex-grow: 1; padding: 20px; overflow-y: auto; border-bottom: 1px solid #ddd; }
-        .message { margin-bottom: 15px; padding: 10px 14px; border-radius: 18px; line-height: 1.5; max-width: 85%; word-wrap: break-word; }
+        .message { margin-bottom: 15px; padding: 10px 14px; border-radius: 18px; line-height: 1.5; max-width: 90%; word-wrap: break-word; }
         .user-message { background-color: #007bff; color: white; margin-left: auto; }
         .ai-message { background-color: #e9e9eb; color: #333; }
         .error-message { background-color: #ffebee; color: #c62828; border: 1px solid #c62828; }
-        .loading-indicator { color: #888; text-align: center; font-style: italic; }
         #input-form { display: flex; padding: 15px; border-top: 1px solid #eee; }
         #message-input { flex-grow: 1; border: 1px solid #ddd; padding: 12px; border-radius: 20px; font-size: 16px; outline: none; transition: border-color 0.2s; }
         #message-input:focus { border-color: #007bff; }
         #send-button { background-color: #007bff; color: white; border: none; padding: 12px 18px; border-radius: 20px; margin-left: 10px; cursor: pointer; font-size: 16px; transition: background-color 0.2s; }
         #send-button:disabled { background-color: #a0c7ff; cursor: not-allowed; }
+
+        /* 2. Add styles for rendered Markdown */
+        .ai-message pre { background-color: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 8px; overflow-x: auto; }
+        .ai-message code { font-family: "Courier New", Courier, monospace; background-color: #f1f1f1; padding: 2px 4px; border-radius: 4px; }
+        .ai-message pre code { background-color: transparent; padding: 0; }
+        .ai-message blockquote { border-left: 4px solid #ccc; padding-left: 10px; color: #666; margin-left: 0; }
+        .ai-message ul, .ai-message ol { padding-left: 20px; }
     </style>
 </head>
 <body>
 
-<!-- HTML structure comes first -->
 <div id="chat-container">
     <div id="chat-box">
-        <div class="message ai-message">Hello! How can I help you today?</div>
+        <div class="message ai-message">Hello! Ask me anything, and I'll format my response in Markdown.</div>
     </div>
     <form id="input-form">
         <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off" required>
@@ -33,14 +42,12 @@
     </form>
 </div>
 
-<!-- JavaScript is placed last to ensure all HTML elements are loaded before the script runs -->
 <script>
     const chatBox = document.getElementById('chat-box');
     const inputForm = document.getElementById('input-form');
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
 
-    // This placeholder is replaced by the GitHub Action during deployment.
     const BACKEND_URL = '__BACKEND_URL__';
 
     inputForm.addEventListener('submit', async (event) => {
@@ -52,36 +59,54 @@
         messageInput.value = '';
         toggleLoading(true);
 
-        try {
-            // Add a cache-busting parameter to the URL to prevent stale responses.
-            const urlWithCacheBust = `${BACKEND_URL}?t=${new Date().getTime()}`;
+        // Create a new message element for the AI's response
+        const aiMessageElement = document.createElement('div');
+        aiMessageElement.classList.add('message', 'ai-message');
+        chatBox.appendChild(aiMessageElement);
+        // Add a blinking cursor effect
+        aiMessageElement.innerHTML = '<span class="blinking-cursor">▋</span>';
+        chatBox.scrollTop = chatBox.scrollHeight;
 
-            const response = await fetch(urlWithCacheBust, {
+        try {
+            const response = await fetch(BACKEND_URL, {
                 method: 'POST',
-                // Use 'text/plain' to avoid the CORS preflight OPTIONS request.
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({ message: userMessage })
             });
 
             if (!response.ok) {
-                // Try to parse error response, otherwise use status text.
-                let errorMsg = response.statusText;
-                try {
-                    const errorData = await response.json();
-                    errorMsg = errorData.error || `HTTP error! Status: ${response.status}`;
-                } catch (e) { /* Ignore parsing error */ }
-                throw new Error(errorMsg);
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
             }
 
-            const data = await response.json();
-            addMessage(data.reply, 'ai-message');
+            // --- 3. NEW STREAMING AND MARKDOWN LOGIC ---
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let fullResponse = '';
+            aiMessageElement.innerHTML = ''; // Clear the blinking cursor
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                fullResponse += chunk;
+                // Temporarily display raw text while streaming
+                aiMessageElement.textContent = fullResponse;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            
+            // Once streaming is complete, parse the full response as Markdown
+            // Use DOMPurify to sanitize the HTML to prevent XSS attacks
+            const sanitizedHtml = DOMPurify.sanitize(marked.parse(fullResponse));
+            aiMessageElement.innerHTML = sanitizedHtml;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            // --- END OF NEW LOGIC ---
 
         } catch (error) {
             console.error('Fetch Error:', error);
-            const displayError = (error instanceof TypeError) ?
-                "Network connection failed. Please check your connection and ensure the backend server is running." :
-                error.message;
-            addMessage(`Error: ${displayError}`, 'error-message');
+            aiMessageElement.textContent = `Error: ${error.message}`;
+            aiMessageElement.classList.add('error-message');
         } finally {
             toggleLoading(false);
         }
@@ -92,22 +117,12 @@
         messageElement.classList.add('message', className);
         messageElement.textContent = text;
         chatBox.appendChild(messageElement);
-        // Scroll to the latest message.
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     function toggleLoading(isLoading) {
         sendButton.disabled = isLoading;
-        let loadingIndicator = document.querySelector('.loading-indicator');
-        if (isLoading && !loadingIndicator) {
-            loadingIndicator = document.createElement('div');
-            loadingIndicator.classList.add('message', 'loading-indicator');
-            loadingIndicator.textContent = 'Assistant is typing...';
-            chatBox.appendChild(loadingIndicator);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        } else if (!isLoading && loadingIndicator) {
-            loadingIndicator.remove();
-        }
+        messageInput.disabled = isLoading;
     }
 </script>
 
