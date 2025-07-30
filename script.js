@@ -4,13 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatBox = document.getElementById('chat-box');
     const sendButton = document.getElementById('send-button');
 
-    // ==============================================================================
-    // CRITICAL: Replace this with the public URL provided by zrok when you run it.
-    // Example: const BACKEND_URL = 'https://abc123def456.zrok.io/api/generate';
-    // ==============================================================================
-    const BACKEND_URL = 'https://7jlhq0nn7aib.share.zrok.io';
-
-    let eventSource;
+    // This URL should be correct in your repository.
+    // Example: const BACKEND_URL = 'https://7jlhq0nn7aib.share.zrok.io/api/generate';
+    const BACKEND_URL = 'https://7jlhq0nn7aib.share.zrok.io'; // Replace with your actual zrok URL if different
 
     chatForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -24,60 +20,82 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
         const prompt = promptInput.value.trim();
         if (!prompt) return;
 
         setFormState(true); // Disable form
         addMessage(prompt, 'user');
         promptInput.value = '';
-        autoResizeTextarea(); // Reset textarea height
+        autoResizeTextarea();
 
         const assistantMessageElement = addMessage('', 'assistant');
         const assistantParagraph = assistantMessageElement.querySelector('p');
+        assistantParagraph.textContent = '▍'; // Initial cursor
 
         try {
-            // Close any existing connection before starting a new one
-            if (eventSource) {
-                eventSource.close();
-            }
-
-            eventSource = new EventSource(BACKEND_URL, {
+            const response = await fetch(`${BACKEND_URL}/api/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({ prompt: prompt })
             });
 
-            assistantParagraph.textContent = '▍'; // Initial cursor
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
 
-            eventSource.onmessage = (event) => {
-                // The first character is the cursor, so remove it
-                if (assistantParagraph.textContent === '▍') {
-                    assistantParagraph.textContent = '';
+            // The response body is a ReadableStream
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            // The first character is the cursor, so remove it
+            if (assistantParagraph.textContent === '▍') {
+                assistantParagraph.textContent = '';
+            }
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    break;
                 }
+
+                // Decode the chunk of data and add it to our buffer
+                buffer += decoder.decode(value, { stream: true });
                 
-                // llama.cpp streams JSON objects with a 'data: ' prefix
-                const data = JSON.parse(event.data);
-                if (data.content) {
-                    assistantParagraph.textContent += data.content;
-                    scrollToBottom();
-                }
-                if (data.stop) {
-                    eventSource.close();
-                    setFormState(false); // Re-enable form
-                }
-            };
+                // Process complete "data: ..." lines from the buffer
+                let eolIndex;
+                while ((eolIndex = buffer.indexOf('\n')) >= 0) {
+                    const line = buffer.substring(0, eolIndex).trim();
+                    buffer = buffer.substring(eolIndex + 1);
 
-            eventSource.onerror = (err) => {
-                console.error("EventSource failed:", err);
-                assistantParagraph.textContent = "Error: Could not connect to the AI service. Please check the backend and zrok status.";
-                eventSource.close();
-                setFormState(false); // Re-enable form
-            };
+                    if (line.startsWith('data:')) {
+                        const jsonStr = line.substring(5).trim();
+                        try {
+                            const data = JSON.parse(jsonStr);
+                            if (data.content) {
+                                assistantParagraph.textContent += data.content;
+                                scrollToBottom();
+                            }
+                            if (data.stop) {
+                                // Stop signal received from the server
+                                reader.cancel();
+                                break;
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse JSON from stream:', jsonStr);
+                        }
+                    }
+                }
+            }
 
         } catch (error) {
-            console.error('Error setting up EventSource:', error);
-            assistantParagraph.textContent = "Error: Failed to initiate a connection with the server.";
+            console.error('Fetch failed:', error);
+            assistantParagraph.textContent = `Error: ${error.message}`;
+        } finally {
             setFormState(false); // Re-enable form
         }
     };
