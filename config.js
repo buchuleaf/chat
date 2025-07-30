@@ -3,10 +3,10 @@ window.AppConfig = {
     // API Configuration
     api: {
         // Base URL for the backend API
-        // Update this with your ngrok URL when deployed
+        // Updated to use myzrok.io hosting
         baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:3000'  // Development
-            : 'https://99391ded4dae.ngrok-free.app',  // Replace with your ngrok URL
+            : 'https://fgpk6tp4g1pi.share.zrok.io',  // Replace with your myzrok.io URL
         
         // API endpoints
         endpoints: {
@@ -20,7 +20,6 @@ window.AppConfig = {
         // Default headers for API requests
         headers: {
             'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true',
             'Accept': 'application/json'
         }
     },
