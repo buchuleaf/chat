@@ -1,8 +1,7 @@
-class GemmaChat {
+class MinimalChat {
     constructor() {
         this.isConnected = false;
         this.isProcessing = false;
-        this.messageHistory = [];
         this.abortController = null;
         this.userHasScrolled = false;
         this.isNearBottom = true;
@@ -17,8 +16,6 @@ class GemmaChat {
 
     initializeElements() {
         this.elements = {
-            maxTokens: document.getElementById('maxTokens'),
-            temperature: document.getElementById('temperature'),
             statusDot: document.getElementById('statusDot'),
             statusText: document.getElementById('statusText'),
             messages: document.getElementById('messages'),
@@ -41,7 +38,6 @@ class GemmaChat {
         });
         this.elements.messageInput.addEventListener('input', () => this.autoResizeTextarea());
         
-        // Scroll event handlers
         this.elements.messages.addEventListener('scroll', () => this.handleScroll());
         this.elements.messages.addEventListener('wheel', () => this.markUserScrolled());
         this.elements.messages.addEventListener('touchstart', () => this.markUserScrolled());
@@ -58,21 +54,14 @@ class GemmaChat {
     }
 
     async initializeApp() {
-        // Set default values from config
-        this.elements.maxTokens.value = this.config.defaults.maxTokens;
-        this.elements.temperature.value = this.config.defaults.temperature;
-        
-        // Initialize UI
         this.autoResizeTextarea();
         setTimeout(() => this.handleScroll(), 100);
         
-        // Check backend connection
-        await this.checkBackendConnection();
+        await this.checkConnection();
         
-        // Set up periodic health checks
         setInterval(() => {
-            this.checkBackendConnection();
-        }, this.config.ui.healthCheckInterval);
+            this.checkConnection();
+        }, this.config.ui.connectionCheckInterval);
     }
 
     autoResizeTextarea() {
@@ -115,37 +104,21 @@ class GemmaChat {
         this.elements.scrollToBottomBtn.style.display = shouldShow ? 'block' : 'none';
     }
 
-    async checkBackendConnection(isRetry = false) {
+    async checkConnection() {
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), this.config.api.timeout);
-
-            const response = await fetch(`${this.config.api.baseUrl}${this.config.api.endpoints.health}`, {
-                method: 'GET',
-                headers: this.config.api.headers,
-                signal: controller.signal
+            const response = await fetch(`${this.config.api.baseUrl}${this.config.api.endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'health' })
             });
 
-            clearTimeout(timeoutId);
-
             if (response.ok) {
-                const data = await response.json();
-                if (data.status === 'ok') {
-                    this.updateConnectionStatus(true, 'Connected');
-                } else {
-                    this.updateConnectionStatus(false, 'Service unavailable');
-                }
+                this.updateConnectionStatus(true, 'Connected');
             } else {
-                this.updateConnectionStatus(false, `Server error (${response.status})`);
-                if (!isRetry) this.tryAutomatedBypass();
+                this.updateConnectionStatus(false, 'Service unavailable');
             }
         } catch (error) {
-            if (error.name === 'AbortError') {
-                this.updateConnectionStatus(false, 'Connection timeout');
-            } else {
-                this.updateConnectionStatus(false, 'Connection failed');
-            }
-            if (!isRetry) this.tryAutomatedBypass();
+            this.updateConnectionStatus(false, 'Connection failed');
         }
     }
 
@@ -155,53 +128,6 @@ class GemmaChat {
         this.elements.statusText.textContent = message;
     }
 
-    tryAutomatedBypass() {
-        console.log('Attempting automated zrok bypass...');
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = `${this.config.api.baseUrl}?skip_zrok_interstitial=true`;
-        document.body.appendChild(iframe);
-
-        setTimeout(() => {
-            this.checkBackendConnection(true).then(() => {
-                if (!this.isConnected) {
-                    console.log('Automated bypass failed, showing manual link.');
-                    this.showInterstitialBypassLink();
-                }
-            });
-            document.body.removeChild(iframe);
-        }, 3000); // Wait for iframe to potentially set the cookie
-    }
-
-    showInterstitialBypassLink() {
-        const bypassUrl = `${this.config.api.baseUrl}?skip_zrok_interstitial=true`;
-        const statusElement = this.elements.statusText;
-        
-        // Make the status text clickable
-        statusElement.style.cursor = 'pointer';
-        statusElement.style.textDecoration = 'underline';
-        statusElement.style.color = '#007bff';
-        
-        statusElement.onclick = () => {
-            // Open bypass URL in new tab
-            window.open(bypassUrl, '_blank');
-            
-            // Show instructions
-            this.showError(`
-                1. Click "Continue" on the page that opened
-                2. Close that tab and return here
-                3. The connection should work now
-            `);
-            
-            // Retry connection after a short delay
-            setTimeout(() => {
-                this.checkBackendConnection();
-            }, 3000);
-        };
-    }
-
-    
-
     async sendMessage() {
         if (this.isProcessing) return;
         
@@ -209,7 +135,7 @@ class GemmaChat {
         if (!message) return;
         
         if (!this.isConnected) {
-            this.showError('Unable to connect to AI service. Please check your connection.');
+            this.showError('Unable to connect to service. Please try again.');
             return;
         }
 
@@ -222,26 +148,15 @@ class GemmaChat {
         this.abortController = new AbortController();
 
         try {
-            // Add user message
             this.addMessage('user', message);
-            this.messageHistory.push({ role: 'user', content: message });
 
-            const requestBody = {
-                messages: [...this.messageHistory],
-                max_tokens: parseInt(this.elements.maxTokens.value),
-                temperature: parseFloat(this.elements.temperature.value)
-            };
-            
-            // Add bypass parameter to chat endpoint as well
-            const chatUrl = `${this.config.api.baseUrl}${this.config.api.endpoints.chat}?skip_zrok_interstitial=true`;
-            
-            const response = await fetch(chatUrl, {
+            const response = await fetch(`${this.config.api.baseUrl}${this.config.api.endpoint}`, {
                 method: 'POST',
-                headers: {
-                    ...this.config.api.headers,
-                    'Cache-Control': 'no-cache'
-                },
-                body: JSON.stringify(requestBody),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    type: 'chat',
+                    message: message
+                }),
                 signal: this.abortController.signal
             });
 
@@ -249,7 +164,6 @@ class GemmaChat {
                 throw new Error(`Service error: ${response.status}`);
             }
 
-            // Handle streaming response
             const assistantMessageDiv = this.addMessage('assistant', '', true);
             const contentDiv = assistantMessageDiv.querySelector('.message-content');
             let fullResponse = '';
@@ -271,8 +185,8 @@ class GemmaChat {
                         
                         try {
                             const parsed = JSON.parse(data);
-                            if (parsed.choices?.[0]?.delta?.content) {
-                                fullResponse += parsed.choices[0].delta.content;
+                            if (parsed.content) {
+                                fullResponse += parsed.content;
                                 contentDiv.innerHTML = marked.parse(fullResponse);
                                 this.scrollToBottom();
                             }
@@ -283,19 +197,12 @@ class GemmaChat {
                 }
             }
 
-            this.messageHistory.push({ role: 'assistant', content: fullResponse });
             this.elements.messageInput.value = '';
             this.autoResizeTextarea();
 
         } catch (error) {
             if (error.name === 'AbortError') {
                 console.log('Generation stopped by user');
-            } else if (error.message.includes('503') || error.message.includes('502')) {
-                this.showError('AI service temporarily unavailable. Please try again in a moment.');
-            } else if (error.message.includes('403')) {
-                this.showError('Access denied. Please check the zrok configuration.');
-            } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-                this.showError('Network connection failed. Please check the zrok URL and try again.');
             } else {
                 this.showError('Failed to get response. Please try again.');
                 console.error('Chat error:', error);
@@ -366,7 +273,6 @@ class GemmaChat {
     }
 }
 
-// Initialize the chat application
 document.addEventListener('DOMContentLoaded', () => {
-    new GemmaChat();
+    new MinimalChat();
 });
