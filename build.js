@@ -60,39 +60,39 @@ async function processJavaScript() {
         fs.writeFileSync(path.join('dist', 'app.min.js'), appMinified.code);
         
     } else {
-        // Production mode - obfuscate
+        // Production mode - obfuscate with balanced settings
         const obfuscationOptions = {
             compact: true,
             controlFlowFlattening: true,
-            controlFlowFlatteningThreshold: 0.75,
+            controlFlowFlatteningThreshold: 0.3, // Reduced from 0.75
             deadCodeInjection: true,
-            deadCodeInjectionThreshold: 0.4,
-            debugProtection: true,
+            deadCodeInjectionThreshold: 0.2, // Reduced from 0.4
+            debugProtection: false, // Disabled - can break functionality
             debugProtectionInterval: 2000,
-            disableConsoleOutput: true,
+            disableConsoleOutput: false, // Disabled for debugging
             identifierNamesGenerator: 'hexadecimal',
             log: false,
             numbersToExpressions: true,
             renameGlobals: false,
             rotateStringArray: true,
-            selfDefending: true,
+            selfDefending: false, // Disabled - can break functionality
             shuffleStringArray: true,
             simplify: true,
             splitStrings: true,
-            splitStringsChunkLength: 10,
+            splitStringsChunkLength: 5, // Reduced from 10
             stringArray: true,
             stringArrayCallsTransform: true,
-            stringArrayCallsTransformThreshold: 0.75,
+            stringArrayCallsTransformThreshold: 0.5, // Reduced from 0.75
             stringArrayEncoding: ['base64'],
             stringArrayIndexShift: true,
             stringArrayRotate: true,
             stringArrayShuffle: true,
-            stringArrayWrappersCount: 2,
+            stringArrayWrappersCount: 1, // Reduced from 2
             stringArrayWrappersChainedCalls: true,
-            stringArrayWrappersParametersMaxCount: 4,
+            stringArrayWrappersParametersMaxCount: 2, // Reduced from 4
             stringArrayWrappersType: 'function',
-            stringArrayThreshold: 0.75,
-            transformObjectKeys: true,
+            stringArrayThreshold: 0.5, // Reduced from 0.75
+            transformObjectKeys: false, // Disabled - can break object access
             unicodeEscapeSequence: false
         };
         
