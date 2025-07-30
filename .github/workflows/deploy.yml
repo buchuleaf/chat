@@ -3,8 +3,8 @@ name: Deploy SvelteKit App to GitHub Pages
 on:
   # Runs on pushes to the main branch
   push:
-    branches: ["main"]
-  
+    branches: ['main']
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -16,7 +16,7 @@ permissions:
 
 # Allow only one concurrent deployment, cancelling older runs
 concurrency:
-  group: "pages"
+  group: 'pages'
   cancel-in-progress: true
 
 jobs:
@@ -26,11 +26,11 @@ jobs:
     steps:
       - name: Checkout your repository
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20" # Use a current LTS version
+          node-version: '20' # Use a current LTS version
           cache: 'npm'
 
       - name: Install dependencies
