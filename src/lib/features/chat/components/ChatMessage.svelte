@@ -131,16 +131,16 @@
 	}
 
 	.message-wrapper.user .message {
-		background-color: var(--color-primary);
-		color: var(--color-text-inverse);
+		background-color: #333333;
+		color: var(--color-text-primary);
 		border-bottom-right-radius: var(--radius-lg);
 	}
 
 	.message-wrapper.assistant .message {
-		background-color: var(--color-surface-tertiary);
+		background-color: var(--color-surface-secondary);
 		color: var(--color-text-primary);
 		border-bottom-left-radius: var(--radius-lg);
-		border: 1px solid var(--color-border-secondary);
+		border: 1px solid var(--color-border-primary);
 	}
 
 	.message-wrapper.error .message {

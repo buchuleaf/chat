@@ -48,17 +48,17 @@
 		
 		<div class="form-group">
 			<label class="form-label" for="system-prompt">
-				System Prompt
+				Personality
 			</label>
 			<Typography variant="body-xs" color="secondary" class="form-description">
-				Define the personality and instructions for the AI assistant.
+				Customize how Gonk responds to you.
 			</Typography>
 			<textarea 
 				id="system-prompt" 
 				bind:value={systemPromptValue} 
 				rows="8"
 				class="form-textarea"
-				placeholder="Enter your system prompt here..."
+				placeholder="Tell Gonk how to behave..."
 			></textarea>
 		</div>
 		

@@ -2,12 +2,10 @@
 	import '$lib/styles/design-system.css';
 	import { chat } from '$lib/features/chat/stores/chatStore';
 	import ChatMessage from '$lib/features/chat/components/ChatMessage.svelte';
-	import SettingsModal from '$lib/features/chat/components/SettingsModal.svelte';
 	import { Button, Typography } from '$lib/components';
 
 	let userInput = '';
 	let chatContainer: HTMLElement;
-	let showSettings = false;
 
 	// Reactive variables for better readability in the template
 	$: messages = $chat.messages;
@@ -39,25 +37,13 @@
 	}
 </script>
 
-{#if showSettings}
-	<SettingsModal on:close={() => (showSettings = false)} />
-{/if}
 
 <div class="app-container">
 	<header class="app-header">
 		<div class="header-content">
-			<Typography as="h1" variant="heading-lg" weight="semibold">Svelte AI Chat</Typography>
-			<Typography variant="body-sm" color="secondary">Powered by a local Llama model</Typography>
+			<Typography as="h1" variant="heading-lg" weight="semibold">Gonk</Typography>
 		</div>
 		<div class="header-actions">
-			<Button
-				variant="secondary"
-				size="sm"
-				on:click={() => (showSettings = true)}
-				title="Edit system prompt"
-			>
-				Settings
-			</Button>
 			<Button
 				variant="secondary"
 				size="sm"
@@ -70,9 +56,17 @@
 	</header>
 
 	<div class="chat-window" bind:this={chatContainer}>
-		{#each messages as message (message.id)}
-			<ChatMessage {message} />
-		{/each}
+		{#if messages.length === 0}
+			<div class="empty-state">
+				<div class="empty-state-content">
+					<Typography variant="body-md" color="tertiary">Start a conversation</Typography>
+				</div>
+			</div>
+		{:else}
+			{#each messages as message (message.id)}
+				<ChatMessage {message} />
+			{/each}
+		{/if}
 	</div>
 
 	<footer class="input-area">
@@ -130,7 +124,6 @@
 		height: 100vh;
 		margin: 0 auto;
 		background-color: var(--color-surface-primary);
-		box-shadow: var(--shadow-xl);
 		font-family: var(--font-family-sans);
 	}
 
@@ -139,7 +132,7 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: var(--spacing-xl) var(--spacing-2xl);
+		padding: var(--spacing-md) var(--spacing-lg);
 		border-bottom: 1px solid var(--color-border-primary);
 		background-color: var(--color-surface-primary);
 		flex-shrink: 0;
@@ -165,6 +158,28 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-lg);
+	}
+
+	/* Empty State */
+	.empty-state {
+		flex-grow: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: var(--spacing-4xl);
+	}
+
+	.empty-state-content {
+		text-align: center;
+		max-width: 400px;
+	}
+
+	.empty-state-content :global(h2) {
+		margin-bottom: var(--spacing-md);
+	}
+
+	.empty-state-content :global(p) {
+		margin: 0;
 	}
 
 	/* Input Area */

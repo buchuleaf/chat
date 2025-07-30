@@ -2,8 +2,7 @@ import { writable, get } from 'svelte/store';
 import { env } from '$env/dynamic/public';
 import type { Message } from '$lib/features/chat/types';
 
-const defaultSystemPrompt =
-	'You are a helpful AI assistant. You must format your responses using Markdown.';
+const defaultSystemPrompt = '';
 const LOCAL_STORAGE_KEY = 'chat_session_v2';
 
 const getStoredSession = (): { messages: Message[]; systemPrompt: string } | null => {
@@ -17,9 +16,7 @@ const createInitialMessages = (): Message[] => {
 	if (storedSession && storedSession.messages.length > 0) {
 		return storedSession.messages;
 	}
-	return [
-		{ id: crypto.randomUUID(), role: 'assistant', content: 'Hello! How can I help you today?' }
-	];
+	return [];
 };
 
 function createChatStore() {
@@ -162,13 +159,7 @@ function createChatStore() {
 			if (s.isLoading) return s;
 			return {
 				...s,
-				messages: [
-					{
-						id: crypto.randomUUID(),
-						role: 'assistant',
-						content: 'Hello! How can I help you today?'
-					}
-				]
+				messages: []
 			};
 		});
 	};
@@ -176,7 +167,7 @@ function createChatStore() {
 	const stopGeneration = () => abortController?.abort();
 
 	const updateSystemPrompt = (newPrompt: string) => {
-		update((s) => ({ ...s, systemPrompt: newPrompt.trim() || defaultSystemPrompt }));
+		update((s) => ({ ...s, systemPrompt: newPrompt.trim() }));
 	};
 
 	return {

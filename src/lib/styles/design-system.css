@@ -32,22 +32,22 @@
   --color-gray-900: #212529;
   --color-black: #000000;
 
-  /* Surface Colors */
-  --color-surface-primary: var(--color-white);
-  --color-surface-secondary: var(--color-gray-50);
-  --color-surface-tertiary: var(--color-gray-100);
+  /* Surface Colors - Dark Theme Default */
+  --color-surface-primary: #0a0a0a;
+  --color-surface-secondary: #111111;
+  --color-surface-tertiary: #1a1a1a;
   --color-surface-elevated: var(--color-white);
 
-  /* Text Colors */
-  --color-text-primary: var(--color-gray-900);
-  --color-text-secondary: var(--color-gray-600);
-  --color-text-tertiary: var(--color-gray-500);
-  --color-text-inverse: var(--color-white);
-  --color-text-muted: var(--color-gray-400);
+  /* Text Colors - Dark Theme Default */
+  --color-text-primary: #e5e5e5;
+  --color-text-secondary: #a0a0a0;
+  --color-text-tertiary: #666666;
+  --color-text-inverse: var(--color-black);
+  --color-text-muted: #404040;
 
-  /* Border Colors */
-  --color-border-primary: var(--color-gray-300);
-  --color-border-secondary: var(--color-gray-200);
+  /* Border Colors - Dark Theme Default */
+  --color-border-primary: #333333;
+  --color-border-secondary: #222222;
   --color-border-focus: var(--color-primary);
   --color-border-error: var(--color-error);
 
@@ -154,7 +154,7 @@ body {
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);
   color: var(--color-text-primary);
-  background-color: var(--color-surface-secondary);
+  background-color: var(--color-surface-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -246,16 +246,3 @@ body {
   }
 }
 
-/* === Dark Mode Support (Future Enhancement) === */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-surface-primary: var(--color-gray-900);
-    --color-surface-secondary: var(--color-gray-800);
-    --color-surface-tertiary: var(--color-gray-700);
-    --color-text-primary: var(--color-gray-100);
-    --color-text-secondary: var(--color-gray-300);
-    --color-text-tertiary: var(--color-gray-400);
-    --color-border-primary: var(--color-gray-600);
-    --color-border-secondary: var(--color-gray-700);
-  }
-}
