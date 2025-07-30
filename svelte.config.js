@@ -13,7 +13,7 @@ const config = {
 		}),
 		paths: {
 			// IMPORTANT: Replace 'project-frontend' with your actual repository name.
-			base: process.env.NODE_ENV === 'production' ? '/project-frontend' : ''
+			base: process.env.NODE_ENV === 'production' ? '/chat' : ''
 		}
 	}
 };
