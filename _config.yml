@@ -1,0 +1,25 @@
+# GitHub Pages configuration
+# This file ensures proper static site serving
+
+# Basic site information
+title: "Gemma 3n AI Chat"
+description: "Secure AI chat interface"
+
+# GitHub Pages settings
+plugins:
+  - jekyll-relative-links
+
+# File handling
+include:
+  - "*.html"
+  - "*.js"
+  - "*.css"
+  - "*.json"
+
+# Security headers
+webrick:
+  headers:
+    X-Frame-Options: DENY
+    X-Content-Type-Options: nosniff
+    X-XSS-Protection: 1; mode=block
+    Referrer-Policy: strict-origin-when-cross-origin

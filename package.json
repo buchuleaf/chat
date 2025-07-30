@@ -1,0 +1,21 @@
+{
+  "name": "gemma3n-frontend",
+  "version": "1.0.0",
+  "description": "Secure frontend for Gemma 3n AI Chat",
+  "scripts": {
+    "serve": "python -m http.server 8080",
+    "build": "echo 'Static frontend - no build required'",
+    "deploy": "echo 'Deploy using GitHub Actions'"
+  },
+  "keywords": [
+    "ai",
+    "chat",
+    "frontend",
+    "gemma",
+    "llama.cpp"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
