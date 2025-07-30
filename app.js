@@ -58,11 +58,11 @@ class MinimalChat {
         this.autoResizeTextarea();
         setTimeout(() => this.handleScroll(), 100);
         
-        // Set zrok interstitial bypass cookie
-        this.setZrokBypassCookie();
-        
         // Display debug info
         this.showDebugInfo();
+        
+        // Try to preload zrok URL to bypass interstitial
+        this.preloadZrokBypass();
         
         await this.checkConnection();
         
@@ -71,23 +71,53 @@ class MinimalChat {
         }, this.config.ui.connectionCheckInterval);
     }
 
-    setZrokBypassCookie() {
-        // Extract domain from the zrok URL for cookie setting
-        try {
-            const url = new URL(this.config.api.baseUrl);
-            const domain = url.hostname;
-            
-            // Set the zrok_interstitial cookie to bypass the interstitial page
-            // This cookie expires in 7 days as per zrok documentation
-            const expiryDate = new Date();
-            expiryDate.setDate(expiryDate.getDate() + 7);
-            
-            document.cookie = `zrok_interstitial=bypass; expires=${expiryDate.toUTCString()}; domain=${domain}; path=/; secure; samesite=none`;
-            
-            console.log(`Set zrok bypass cookie for domain: ${domain}`);
-        } catch (error) {
-            console.warn('Failed to set zrok bypass cookie:', error);
-        }
+    preloadZrokBypass() {
+        // Show user instruction for manual bypass
+        const instructionDiv = document.createElement('div');
+        instructionDiv.style.cssText = `
+            position: fixed; 
+            top: 10px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: #ff6b35; 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        `;
+        
+        const zrokUrl = this.config.api.baseUrl;
+        instructionDiv.innerHTML = `
+            <div>⚠️ First-time setup required</div>
+            <div style="margin: 5px 0;">
+                <a href="${zrokUrl}" target="_blank" style="color: #fff; text-decoration: underline;">
+                    Click here to bypass zrok interstitial
+                </a>
+            </div>
+            <div style="font-size: 12px;">Then come back to use the chat</div>
+        `;
+        
+        document.body.appendChild(instructionDiv);
+        
+        // Remove instruction after 10 seconds or when connection succeeds
+        setTimeout(() => {
+            if (instructionDiv.parentNode) {
+                instructionDiv.remove();
+            }
+        }, 15000);
+        
+        // Remove instruction when connection is successful
+        const originalUpdateStatus = this.updateConnectionStatus.bind(this);
+        this.updateConnectionStatus = (connected, message) => {
+            if (connected && instructionDiv.parentNode) {
+                instructionDiv.remove();
+            }
+            originalUpdateStatus(connected, message);
+        };
     }
 
     showDebugInfo() {
