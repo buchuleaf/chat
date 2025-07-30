@@ -122,7 +122,10 @@ class MinimalChat {
         try {
             const response = await fetch(`${this.config.api.baseUrl}${this.config.api.endpoint}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'skip_zrok_interstitial': 'true'
+                },
                 body: JSON.stringify({ type: 'health' })
             });
 
@@ -166,7 +169,10 @@ class MinimalChat {
 
             const response = await fetch(`${this.config.api.baseUrl}${this.config.api.endpoint}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'skip_zrok_interstitial': 'true'
+                },
                 body: JSON.stringify({ 
                     type: 'chat',
                     message: message
