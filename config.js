@@ -1,20 +1,31 @@
 // Minimal configuration for the frontend application
-window.AppConfig = {
-    // API Configuration - single endpoint only
-    api: {
-        // Base URL for the backend API
-        baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:3000'  // Development
-            : 'https://3cf9ps4x0101.share.zrok.io',  // Production via zrok tunnel
-        
-        // Single endpoint for all communication
-        endpoint: '/api/message'
-    },
+(function() {
+    const hostname = window.location.hostname;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+    const baseUrl = isLocal 
+        ? 'http://localhost:3000'  // Development
+        : 'https://3cf9ps4x0101.share.zrok.io';  // Production via zrok tunnel
     
-    // UI Configuration
-    ui: {
-        scrollThreshold: 100,
-        errorDisplayTime: 5000,
-        connectionCheckInterval: 30000
-    }
-};
+    // Debug logging
+    console.log('Frontend Config Debug:', {
+        hostname: hostname,
+        isLocal: isLocal,
+        baseUrl: baseUrl,
+        fullUrl: baseUrl + '/api/message'
+    });
+    
+    window.AppConfig = {
+        // API Configuration - single endpoint only
+        api: {
+            baseUrl: baseUrl,
+            endpoint: '/api/message'
+        },
+    
+        // UI Configuration
+        ui: {
+            scrollThreshold: 100,
+            errorDisplayTime: 5000,
+            connectionCheckInterval: 30000
+        }
+    };
+})();
