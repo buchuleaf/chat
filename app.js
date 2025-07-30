@@ -23,7 +23,8 @@ class MinimalChat {
             messageInput: document.getElementById('messageInput'),
             sendButton: document.getElementById('sendButton'),
             stopButton: document.getElementById('stopButton'),
-            scrollToBottomBtn: document.getElementById('scrollToBottom')
+            scrollToBottomBtn: document.getElementById('scrollToBottom'),
+            debugInfo: document.getElementById('debugInfo')
         };
     }
 
@@ -57,11 +58,24 @@ class MinimalChat {
         this.autoResizeTextarea();
         setTimeout(() => this.handleScroll(), 100);
         
+        // Display debug info
+        this.showDebugInfo();
+        
         await this.checkConnection();
         
         setInterval(() => {
             this.checkConnection();
         }, this.config.ui.connectionCheckInterval);
+    }
+
+    showDebugInfo() {
+        const hostname = window.location.hostname;
+        const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+        const fullUrl = this.config.api.baseUrl + this.config.api.endpoint;
+        
+        this.elements.debugInfo.innerHTML = `
+            Host: ${hostname} | Local: ${isLocal} | URL: ${fullUrl}
+        `;
     }
 
     autoResizeTextarea() {
@@ -115,10 +129,10 @@ class MinimalChat {
             if (response.ok) {
                 this.updateConnectionStatus(true, 'Connected');
             } else {
-                this.updateConnectionStatus(false, 'Service unavailable');
+                this.updateConnectionStatus(false, `HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
-            this.updateConnectionStatus(false, 'Connection failed');
+            this.updateConnectionStatus(false, `Connection failed: ${error.message}`);
         }
     }
 
