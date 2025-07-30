@@ -56,7 +56,9 @@ function createChatStore() {
 
 			const response = await fetch(backendUrl, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: { 'Content-Type': 'application/json',
+							'ngrok-skip-browser-warning': 'true'
+				 },
 				body: JSON.stringify({
 					messages: [...history, userMessage].map(({ role, content }) => ({ role, content })),
 					system_prompt: currentSystemPrompt
