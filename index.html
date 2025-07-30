@@ -3,25 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat Interface</title>
-    <link rel="stylesheet" href="style.css">
+    <title>AI Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #chat-container { width: 90%; max-width: 600px; height: 80vh; background: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; border-radius: 8px; }
+        #chat-box { flex-grow: 1; padding: 20px; overflow-y: auto; border-bottom: 1px solid #ddd; }
+        .message { margin-bottom: 15px; padding: 10px; border-radius: 8px; line-height: 1.4; }
+        .user-message { background-color: #007bff; color: white; margin-left: auto; max-width: 80%; text-align: right; }
+        .ai-message { background-color: #e9e9eb; color: #333; max-width: 80%; text-align: left; }
+        .loading-indicator { color: #888; text-align: center; }
+        #input-form { display: flex; padding: 10px; }
+        #message-input { flex-grow: 1; border: 1px solid #ddd; padding: 10px; border-radius: 5px; font-size: 16px; }
+        #send-button { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; margin-left: 10px; cursor: pointer; font-size: 16px; }
+        #send-button:disabled { background-color: #a0a0a0; }
+    </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-box" id="chat-box">
-            <div class="message assistant">
-                <p>Hello! I am an AI assistant. How can I help you today?</p>
-            </div>
-        </div>
-        <div class="chat-input-area">
-            <form class="chat-input-form" id="chat-form">
-                <textarea id="prompt-input" placeholder="Type your message here..." required></textarea>
-                <button type="submit" id="send-button" title="Send Message">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                </button>
-            </form>
-        </div>
+
+<div id="chat-container">
+    <div id="chat-box">
+        <div class="message ai-message">Hello! How can I help you today?</div>
     </div>
-    <script src="script.js"></script>
+    <form id="input-form">
+        <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off">
+        <button id="send-button" type="submit">Send</button>
+    </form>
+</div>
+
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const inputForm = document.getElementById('input-form');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+
+    // IMPORTANT: Replace this with the actual URL of your deployed backend
+    const BACKEND_URL = 'http://localhost:5001/api/chat';
+
+    inputForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const userMessage = messageInput.value.trim();
+
+        if (!userMessage) return;
+
+        // Display user's message and clear input
+        addMessage(userMessage, 'user-message');
+        messageInput.value = '';
+        toggleLoading(true);
+
+        try {
+            const response = await fetch(BACKEND_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userMessage })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            addMessage(data.reply, 'ai-message');
+
+        } catch (error) {
+            console.error('Error:', error);
+            addMessage(`Error: Could not connect to the AI assistant. ${error.message}`, 'ai-message');
+        } finally {
+            toggleLoading(false);
+        }
+    });
+
+    function addMessage(text, className) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', className);
+        messageElement.textContent = text;
+        chatBox.appendChild(messageElement);
+        // Scroll to the bottom
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function toggleLoading(isLoading) {
+        sendButton.disabled = isLoading;
+        let loadingIndicator = document.querySelector('.loading-indicator');
+        if (isLoading && !loadingIndicator) {
+            loadingIndicator = document.createElement('div');
+            loadingIndicator.classList.add('message', 'loading-indicator');
+            loadingIndicator.textContent = 'Assistant is typing...';
+            chatBox.appendChild(loadingIndicator);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        } else if (!isLoading && loadingIndicator) {
+            loadingIndicator.remove();
+        }
+    }
+</script>
+
 </body>
 </html>
