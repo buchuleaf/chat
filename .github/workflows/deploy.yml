@@ -31,12 +31,12 @@ jobs:
 
       # 2. Replaces a placeholder in your index.html with the zrok URL from secrets
       - name: Configure Backend URL
+        # This command finds the placeholder and replaces it with your secret URL.
+        # The '|' character is used as a separator to avoid issues with URLs containing slashes.
         run: |
-          # This command finds the placeholder and replaces it with your secret URL.
-          # The '|' character is used as a separator to avoid issues with URLs containing slashes.
           sed -i 's|__BACKEND_URL__|${{ secrets.ZROK_URL }}/api/chat|g' index.html
-        # This step is conditional and will only run if the secret is set.
-        if: secrets.ZROK_URL != ''
+        # THIS IS THE CORRECTED LINE: The condition is now wrapped in ${{ ... }}
+        if: ${{ secrets.ZROK_URL != '' }}
 
       # 3. Sets up the GitHub Pages environment
       - name: Setup Pages
