@@ -4,15 +4,15 @@ Static frontend for Gemma 3n AI Chat - deployed via GitHub Pages.
 
 ## Setup
 
-1. Update your ngrok URL in `config.js`
+1. Update your zrok URL in `config.js` (replace the baseUrl with your zrok share URL)
 2. Deploy this folder to GitHub Pages
-3. Make sure your backend is running with ngrok tunnel
+3. Make sure your backend is running with zrok tunnel
 
 ## Files
 
 - `index.html` - Main chat interface  
 - `app.js` - Chat functionality
-- `config.js` - Configuration (update ngrok URL here)
+- `config.js` - Configuration (update zrok URL here)
 - `styles.css` - UI styling
 
 ## Local Development

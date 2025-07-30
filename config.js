@@ -6,7 +6,7 @@ window.AppConfig = {
         // Updated to use myzrok.io hosting
         baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:3000'  // Development
-            : 'https://fhsady1ubv9b.share.zrok.io',  // Replace with your myzrok.io URL
+            : 'https://qwd40qtreso8.share.zrok.io',  // Replace with your myzrok.io URL
         
         // API endpoints
         endpoints: {
@@ -20,7 +20,10 @@ window.AppConfig = {
         // Default headers for API requests
         headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'skip_zrok_interstitial': 'true',
+            'zrok-skip-browser-warning': '1',
+            'myzrok-skip-browser-warning': '1'
         }
     },
     

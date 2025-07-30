@@ -124,7 +124,10 @@ class GemmaChat {
                 `${this.config.api.baseUrl}${this.config.api.endpoints.health}`,
                 {
                     method: 'GET',
-                    headers: this.config.api.headers,
+                    headers: {
+                        ...this.config.api.headers,
+                        'Cache-Control': 'no-cache'
+                    },
                     signal: controller.signal
                 }
             );
@@ -138,14 +141,23 @@ class GemmaChat {
                 } else {
                     this.updateConnectionStatus(false, 'Service unavailable');
                 }
+            } else if (response.status === 403) {
+                this.updateConnectionStatus(false, 'Access denied - check zrok URL');
+            } else if (response.status === 502 || response.status === 503) {
+                this.updateConnectionStatus(false, 'Backend service unavailable');
             } else {
                 this.updateConnectionStatus(false, `Server error (${response.status})`);
             }
         } catch (error) {
             if (error.name === 'AbortError') {
                 this.updateConnectionStatus(false, 'Connection timeout');
+            } else if (error.message.includes('CORS')) {
+                this.updateConnectionStatus(false, 'CORS error - check zrok configuration');
+            } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                this.updateConnectionStatus(false, 'Network error - check zrok URL');
             } else {
                 this.updateConnectionStatus(false, 'Connection failed');
+                console.error('Connection error:', error);
             }
         }
     }
@@ -190,7 +202,10 @@ class GemmaChat {
                 `${this.config.api.baseUrl}${this.config.api.endpoints.chat}`,
                 {
                     method: 'POST',
-                    headers: this.config.api.headers,
+                    headers: {
+                        ...this.config.api.headers,
+                        'Cache-Control': 'no-cache'
+                    },
                     body: JSON.stringify(requestBody),
                     signal: this.abortController.signal
                 }
@@ -241,6 +256,12 @@ class GemmaChat {
         } catch (error) {
             if (error.name === 'AbortError') {
                 console.log('Generation stopped by user');
+            } else if (error.message.includes('503') || error.message.includes('502')) {
+                this.showError('AI service temporarily unavailable. Please try again in a moment.');
+            } else if (error.message.includes('403')) {
+                this.showError('Access denied. Please check the zrok configuration.');
+            } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                this.showError('Network connection failed. Please check the zrok URL and try again.');
             } else {
                 this.showError('Failed to get response. Please try again.');
                 console.error('Chat error:', error);
