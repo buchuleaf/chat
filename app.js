@@ -58,6 +58,9 @@ class MinimalChat {
         this.autoResizeTextarea();
         setTimeout(() => this.handleScroll(), 100);
         
+        // Set zrok interstitial bypass cookie
+        this.setZrokBypassCookie();
+        
         // Display debug info
         this.showDebugInfo();
         
@@ -66,6 +69,25 @@ class MinimalChat {
         setInterval(() => {
             this.checkConnection();
         }, this.config.ui.connectionCheckInterval);
+    }
+
+    setZrokBypassCookie() {
+        // Extract domain from the zrok URL for cookie setting
+        try {
+            const url = new URL(this.config.api.baseUrl);
+            const domain = url.hostname;
+            
+            // Set the zrok_interstitial cookie to bypass the interstitial page
+            // This cookie expires in 7 days as per zrok documentation
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + 7);
+            
+            document.cookie = `zrok_interstitial=bypass; expires=${expiryDate.toUTCString()}; domain=${domain}; path=/; secure; samesite=none`;
+            
+            console.log(`Set zrok bypass cookie for domain: ${domain}`);
+        } catch (error) {
+            console.warn('Failed to set zrok bypass cookie:', error);
+        }
     }
 
     showDebugInfo() {
