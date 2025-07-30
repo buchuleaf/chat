@@ -21,7 +21,9 @@ window.AppConfig = {
         
         // Default headers for API requests
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',  // Skip ngrok browser warning
+            'Accept': 'application/json'
         }
     },
     
