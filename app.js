@@ -127,6 +127,7 @@ class GemmaChat {
                 const urls = [
                     `${this.config.api.baseUrl}${this.config.api.endpoints.health}?skip_zrok_interstitial=true`,
                     `${this.config.api.baseUrl}${this.config.api.endpoints.health}`,
+                    `${this.config.api.baseUrl}/` // Fallback to root endpoint
                 ];
                 
                 const headers = {
@@ -138,14 +139,34 @@ class GemmaChat {
                 let response;
                 for (const url of urls) {
                     try {
-                        response = await fetch(url, {
-                            method: 'GET',
-                            headers: headers,
-                            signal: controller.signal
-                        });
-                        break;
+                        console.log(`Attempting connection to: ${url}`);
+                        
+                        // Try with full headers first
+                        try {
+                            console.log('Request headers:', headers);
+                            response = await fetch(url, {
+                                method: 'GET',
+                                headers: headers,
+                                signal: controller.signal
+                            });
+                            console.log(`Response status: ${response.status}, Content-Type: ${response.headers.get('content-type')}`);
+                            break;
+                        } catch (headerError) {
+                            console.log('Request with headers failed, trying simple request:', headerError.message);
+                            
+                            // Try with minimal headers if full headers fail
+                            response = await fetch(url, {
+                                method: 'GET',
+                                headers: {
+                                    'Accept': 'application/json'
+                                },
+                                signal: controller.signal
+                            });
+                            console.log(`Simple request response status: ${response.status}`);
+                            break;
+                        }
                     } catch (e) {
-                        console.log(`Failed attempt with URL: ${url}`, e.message);
+                        console.error(`Failed attempt with URL: ${url}`, e);
                         continue;
                     }
                 }
@@ -172,10 +193,12 @@ class GemmaChat {
                 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.status === 'ok') {
+                    // Accept either health endpoint response or root endpoint response
+                    if (data.status === 'ok' || (data.status === 'running' && data.message === 'Gemma 3n Backend API')) {
                         this.updateConnectionStatus(true, 'Connected');
                         return;
                     } else {
+                        console.log('Unexpected response data:', data);
                         this.updateConnectionStatus(false, 'Service unavailable');
                         return;
                     }
