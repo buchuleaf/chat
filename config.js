@@ -23,7 +23,8 @@ window.AppConfig = {
             'Accept': 'application/json',
             'skip_zrok_interstitial': 'true',
             'zrok-skip-browser-warning': '1',
-            'myzrok-skip-browser-warning': '1'
+            'myzrok-skip-browser-warning': '1',
+            'User-Agent': 'CustomApp/1.0'
         }
     },
     
