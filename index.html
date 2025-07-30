@@ -1,16 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f9; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #chat-container { width: 90%; max-width: 600px; height: 85vh; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; border-radius: 12px; }
+        #chat-box { flex-grow: 1; padding: 20px; overflow-y: auto; border-bottom: 1px solid #ddd; }
+        .message { margin-bottom: 15px; padding: 10px 14px; border-radius: 18px; line-height: 1.5; max-width: 85%; word-wrap: break-word; }
+        .user-message { background-color: #007bff; color: white; margin-left: auto; }
+        .ai-message { background-color: #e9e9eb; color: #333; }
+        .error-message { background-color: #ffebee; color: #c62828; border: 1px solid #c62828; }
+        .loading-indicator { color: #888; text-align: center; font-style: italic; }
+        #input-form { display: flex; padding: 15px; border-top: 1px solid #eee; }
+        #message-input { flex-grow: 1; border: 1px solid #ddd; padding: 12px; border-radius: 20px; font-size: 16px; outline: none; transition: border-color 0.2s; }
+        #message-input:focus { border-color: #007bff; }
+        #send-button { background-color: #007bff; color: white; border: none; padding: 12px 18px; border-radius: 20px; margin-left: 10px; cursor: pointer; font-size: 16px; transition: background-color 0.2s; }
+        #send-button:disabled { background-color: #a0c7ff; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<!-- HTML structure comes first -->
+<div id="chat-container">
+    <div id="chat-box">
+        <div class="message ai-message">Hello! How can I help you today?</div>
+    </div>
+    <form id="input-form">
+        <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off" required>
+        <button id="send-button" type="submit">Send</button>
+    </form>
+</div>
+
+<!-- JavaScript is placed last to ensure all HTML elements are loaded before the script runs -->
 <script>
     const chatBox = document.getElementById('chat-box');
     const inputForm = document.getElementById('input-form');
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
 
-    // The GitHub Action will replace this placeholder.
+    // This placeholder is replaced by the GitHub Action during deployment.
     const BACKEND_URL = '__BACKEND_URL__';
 
     inputForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const userMessage = messageInput.value.trim();
-
         if (!userMessage) return;
 
         addMessage(userMessage, 'user-message');
@@ -18,34 +53,35 @@
         toggleLoading(true);
 
         try {
-            // --- THIS IS THE MODIFIED PART ---
-            // 1. Add a unique timestamp to the URL to prevent caching.
+            // Add a cache-busting parameter to the URL to prevent stale responses.
             const urlWithCacheBust = `${BACKEND_URL}?t=${new Date().getTime()}`;
 
             const response = await fetch(urlWithCacheBust, {
                 method: 'POST',
-                // 2. Change Content-Type to 'text/plain' to avoid preflight.
+                // Use 'text/plain' to avoid the CORS preflight OPTIONS request.
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({ message: userMessage })
             });
-            // --- END OF MODIFICATION ---
-
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+                // Try to parse error response, otherwise use status text.
+                let errorMsg = response.statusText;
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.error || `HTTP error! Status: ${response.status}`;
+                } catch (e) { /* Ignore parsing error */ }
+                throw new Error(errorMsg);
             }
 
             const data = await response.json();
             addMessage(data.reply, 'ai-message');
 
         } catch (error) {
-            console.error('Error:', error);
-            // Check if error is a TypeError, which often indicates a network/CORS failure.
-            const displayError = error instanceof TypeError ?
-                "Could not connect to the server. Please check the connection and try again." :
+            console.error('Fetch Error:', error);
+            const displayError = (error instanceof TypeError) ?
+                "Network connection failed. Please check your connection and ensure the backend server is running." :
                 error.message;
-            addMessage(`Error: ${displayError}`, 'ai-message');
+            addMessage(`Error: ${displayError}`, 'error-message');
         } finally {
             toggleLoading(false);
         }
@@ -56,6 +92,7 @@
         messageElement.classList.add('message', className);
         messageElement.textContent = text;
         chatBox.appendChild(messageElement);
+        // Scroll to the latest message.
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
@@ -73,3 +110,6 @@
         }
     }
 </script>
+
+</body>
+</html>
