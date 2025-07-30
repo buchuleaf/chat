@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // CRITICAL: Replace this with the public URL provided by zrok when you run it.
     // Example: const BACKEND_URL = 'https://abc123def456.zrok.io/api/generate';
     // ==============================================================================
-    const BACKEND_URL = 'https://fzmi4mr7w9f5.share.zrok.io';
+    const BACKEND_URL = 'https://7jlhq0nn7aib.share.zrok.io';
 
     let eventSource;
 
