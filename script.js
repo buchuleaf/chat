@@ -4,95 +4,112 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatBox = document.getElementById('chat-box');
     const sendButton = document.getElementById('send-button');
 
-    // IMPORTANT: Replace this with the actual URL of your backend.
-    // If you are running the backend on the same machine for development,
-    // this will be http://<your-machine-ip>:5000
-    // For production, this will be your deployed backend URL.
-    const BACKEND_URL = 'http://127.0.0.1:5000/api/generate';
+    // ==============================================================================
+    // CRITICAL: Replace this with the public URL provided by zrok when you run it.
+    // Example: const BACKEND_URL = 'https://abc123def456.zrok.io/api/generate';
+    // ==============================================================================
+    const BACKEND_URL = 'https://your-zrok-share-url.zrok.io/api/generate';
 
-    chatForm.addEventListener('submit', async (e) => {
+    let eventSource;
+
+    chatForm.addEventListener('submit', (e) => {
         e.preventDefault();
+        handleSendMessage();
+    });
+
+    promptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    });
+
+    const handleSendMessage = () => {
         const prompt = promptInput.value.trim();
         if (!prompt) return;
 
-        // Disable form and show loading state
-        promptInput.value = '';
-        promptInput.disabled = true;
-        sendButton.disabled = true;
-
-        // Display user's message
+        setFormState(true); // Disable form
         addMessage(prompt, 'user');
+        promptInput.value = '';
+        autoResizeTextarea(); // Reset textarea height
 
-        // Create a placeholder for the assistant's response
-        const assistantMessageElement = addMessage('...', 'assistant');
+        const assistantMessageElement = addMessage('', 'assistant');
         const assistantParagraph = assistantMessageElement.querySelector('p');
-        assistantParagraph.textContent = ''; // Clear the placeholder text
 
         try {
-            const eventSource = new EventSource(`${BACKEND_URL}?prompt=${encodeURIComponent(prompt)}`, {
-                 method: 'POST',
-                 headers: {
-                     'Content-Type': 'application/json',
-                 },
-                 body: JSON.stringify({ prompt: prompt })
+            // Close any existing connection before starting a new one
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource(BACKEND_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt })
             });
 
+            assistantParagraph.textContent = '▍'; // Initial cursor
+
             eventSource.onmessage = (event) => {
+                // The first character is the cursor, so remove it
+                if (assistantParagraph.textContent === '▍') {
+                    assistantParagraph.textContent = '';
+                }
+                
+                // llama.cpp streams JSON objects with a 'data: ' prefix
                 const data = JSON.parse(event.data);
                 if (data.content) {
-                    // Append the content chunk to the paragraph
                     assistantParagraph.textContent += data.content;
-                    // Scroll to the bottom of the chat box
-                    chatBox.scrollTop = chatBox.scrollHeight;
+                    scrollToBottom();
+                }
+                if (data.stop) {
+                    eventSource.close();
+                    setFormState(false); // Re-enable form
                 }
             };
 
             eventSource.onerror = (err) => {
                 console.error("EventSource failed:", err);
-                let errorMessage = "Error connecting to the AI. Please try again later.";
-                if (eventSource.readyState === EventSource.CLOSED) {
-                     // Check if any text was generated before the connection closed
-                    if (assistantParagraph.textContent.trim() === '') {
-                         assistantParagraph.textContent = errorMessage;
-                    }
-                }
+                assistantParagraph.textContent = "Error: Could not connect to the AI service. Please check the backend and zrok status.";
                 eventSource.close();
-                enableForm();
+                setFormState(false); // Re-enable form
             };
 
-            eventSource.addEventListener('close', () => {
-                eventSource.close();
-                enableForm();
-            });
-
-
         } catch (error) {
-            console.error('Error:', error);
-            assistantParagraph.textContent = "Failed to get a response from the server.";
-            enableForm();
+            console.error('Error setting up EventSource:', error);
+            assistantParagraph.textContent = "Error: Failed to initiate a connection with the server.";
+            setFormState(false); // Re-enable form
         }
-    });
+    };
 
-    function addMessage(text, sender) {
+    const addMessage = (text, sender) => {
         const messageElement = document.createElement('div');
         messageElement.classList.add('message', sender);
         const paragraphElement = document.createElement('p');
         paragraphElement.textContent = text;
         messageElement.appendChild(paragraphElement);
         chatBox.appendChild(messageElement);
-        chatBox.scrollTop = chatBox.scrollHeight;
+        scrollToBottom();
         return messageElement;
-    }
+    };
 
-    function enableForm() {
-        promptInput.disabled = false;
-        sendButton.disabled = false;
-        promptInput.focus();
-    }
+    const setFormState = (isDisabled) => {
+        promptInput.disabled = isDisabled;
+        sendButton.disabled = isDisabled;
+        if (!isDisabled) {
+            promptInput.focus();
+        }
+    };
 
-    // Auto-resize textarea
-    promptInput.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-    });
+    const scrollToBottom = () => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    };
+
+    const autoResizeTextarea = () => {
+        promptInput.style.height = 'auto';
+        promptInput.style.height = (promptInput.scrollHeight) + 'px';
+    };
+
+    promptInput.addEventListener('input', autoResizeTextarea);
+    autoResizeTextarea();
 });
