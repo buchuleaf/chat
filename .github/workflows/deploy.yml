@@ -13,43 +13,34 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Sets permissions for the GITHUB_TOKEN to allow deployment to GitHub Pages
     permissions:
       contents: read
       pages: write
       id-token: write
 
     steps:
-      # 1. Checks out your repository so your job can access it
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Replaces placeholder with the zrok URL from GitHub Secrets
+      # This step now uses the NGROK_API_URL secret
       - name: Configure Backend URL
         run: |
-          # This robust script checks if the secret exists before running the replacement.
-          if [ -n "${{ secrets.ZROK_URL }}" ]; then
-            echo "✅ ZROK_URL secret found. Configuring backend URL..."
-            # The '|' separator in sed avoids issues with URLs containing slashes.
-            sed -i 's|__BACKEND_URL__|${{ secrets.ZROK_URL }}/api/chat|g' index.html
+          if [ -n "${{ secrets.NGROK_API_URL }}" ]; then
+            echo "✅ NGROK_API_URL secret found. Configuring backend URL..."
+            sed -i 's|__BACKEND_URL__|${{ secrets.NGROK_API_URL }}|g' index.html
           else
-            echo "⚠️ ZROK_URL secret is not set. Skipping URL replacement."
-            echo "Deployment will likely fail to connect to the backend."
-            exit 1 # Exit with an error to fail the build if the secret is missing.
+            echo "⚠️ NGROK_API_URL secret is not set. Build will fail."
+            exit 1
           fi
 
-      # 3. Sets up the GitHub Pages environment
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # 4. Uploads the static files (your modified index.html) as a build artifact
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload the entire repository root
           path: '.'
 
-      # 5. Deploys the artifact to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
